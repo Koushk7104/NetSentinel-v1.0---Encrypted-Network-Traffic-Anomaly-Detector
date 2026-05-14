@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NetSentinel Forensic Report — {{ case_id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+            @top-center {
+                content: "CONFIDENTIAL — NetSentinel Forensic Report — {{ case_id }}";
+                font-size: 8pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10pt;
+            color: #1a1a2e;
+            line-height: 1.6;
+            background: #fff;
+        }
+        .cover-page {
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 90vh;
+            text-align: center;
+        }
+        .cover-logo {
+            font-size: 42pt;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .cover-subtitle {
+            font-size: 14pt;
+            color: #555;
+            margin-bottom: 40px;
+        }
+        .cover-classification {
+            display: inline-block;
+            padding: 8px 24px;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: 12pt;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+        .cover-meta {
+            text-align: left;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 6px;
+            width: 70%;
+        }
+        .cover-meta tr td { padding: 6px 12px; }
+        .cover-meta .label { font-weight: 600; color: #555; width: 180px; }
+        .cover-meta .value { color: #1a1a2e; }
+        h1 {
+            font-size: 18pt;
+            color: #1a1a2e;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 6px;
+            margin: 24px 0 12px 0;
+            page-break-after: avoid;
+        }
+        h2 {
+            font-size: 13pt;
+            color: #444;
+            margin: 16px 0 8px 0;
+            page-break-after: avoid;
+        }
+        .section { margin-bottom: 20px; page-break-inside: avoid; }
+        .executive-box {
+            background: #f0f0ff;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .risk-high { color: #e74c3c; font-weight: 700; }
+        .risk-medium { color: #f39c12; font-weight: 700; }
+        .risk-low { color: #27ae60; font-weight: 700; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        th {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:nth-child(even) { background: #f9f9fc; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 8pt;
+            font-weight: 600;
+        }
+        .badge-danger { background: #fde8e8; color: #e74c3c; }
+        .badge-warning { background: #fef3cd; color: #856404; }
+        .badge-safe { background: #d4edda; color: #155724; }
+        .chart-container {
+            text-align: center;
+            margin: 16px 0;
+            page-break-inside: avoid;
+        }
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        .hash-box {
+            background: #f7f7f7;
+            border: 1px solid #ddd;
+            padding: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 9pt;
+            word-break: break-all;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        .recommendations li {
+            margin: 6px 0;
+            padding-left: 8px;
+        }
+        .analyst-notes {
+            background: #fffde7;
+            border: 1px solid #fff9c4;
+            padding: 16px;
+            border-radius: 6px;
+            min-height: 60px;
+            margin: 8px 0;
+            white-space: pre-wrap;
+        }
+        .footer-sig {
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #888;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+    <div class="cover-logo">🛡️ NetSentinel</div>
+    <div class="cover-subtitle">Encrypted Network Traffic Forensic Report</div>
+    <div class="cover-classification">{{ classification | upper }}</div>
+    <table class="cover-meta">
+        <tr><td class="label">Case ID</td><td class="value">{{ case_id }}</td></tr>
+        <tr><td class="label">Analyst</td><td class="value">{{ analyst_name }}</td></tr>
+        <tr><td class="label">Date Generated</td><td class="value">{{ report_date }}</td></tr>
+        <tr><td class="label">Analysis Mode</td><td class="value">{{ analysis_mode }}</td></tr>
+        <tr><td class="label">Source</td><td class="value">{{ source_file }}</td></tr>
+        <tr><td class="label">Total Packets Analyzed</td><td class="value">{{ total_packets }}</td></tr>
+        <tr><td class="label">Total Flows</td><td class="value">{{ total_flows }}</td></tr>
+        <tr><td class="label">Anomalies Detected</td><td class="value">{{ total_anomalies }}</td></tr>
+        <tr><td class="label">Tool Version</td><td class="value">NetSentinel v1.0</td></tr>
+    </table>
+</div>
+
+<!-- 1. EXECUTIVE SUMMARY -->
+<h1>1. Executive Summary</h1>
+<div class="executive-box">
+    <p><strong>Overall Risk Level:</strong>
+        <span class="{{ risk_class }}">{{ risk_level }}</span>
+    </p>
+    <p>{{ executive_summary }}</p>
+    <p><strong>Key Findings:</strong></p>
+    <ul>
+        <li>{{ total_anomalies }} anomalous flows detected out of {{ total_flows }} total flows</li>
+        <li>{{ ja3_matches }} JA3 fingerprints matched against known malware signatures</li>
+        <li>{{ flagged_ips }} IP addresses flagged for suspicious reputation</li>
+        <li>Analysis duration: {{ analysis_duration }}</li>
+    </ul>
+</div>
+
+<!-- 2. THREAT TIMELINE -->
+<h1>2. Threat Timeline</h1>
+<div class="section">
+    <p>Chronological sequence of detected anomalous events during the analysis window.</p>
+    {% if timeline_chart %}
+    <div class="chart-container">
+        <img src="{{ timeline_chart }}" alt="Threat Timeline">
+    </div>
+    {% endif %}
+    {% if timeline_events %}
+    <table>
+        <tr><th>#</th><th>Timestamp</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Risk Score</th><th>Trigger</th></tr>
+        {% for event in timeline_events %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ event.timestamp }}</td>
+            <td>{{ event.src }}</td>
+            <td>{{ event.dst }}</td>
+            <td>{{ event.protocol }}</td>
+            <td><span class="{{ event.risk_class }}">{{ event.risk_score }}</span></td>
+            <td>{{ event.trigger }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+<!-- 3. ANOMALY ANALYSIS -->
+<h1>3. Anomaly Analysis (Isolation Forest)</h1>
+<div class="section">
+    <h2>Model Configuration</h2>
+    <table>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Algorithm</td><td>Isolation Forest (scikit-learn)</td></tr>
+        <tr><td>Estimators</td><td>{{ model_params.n_estimators }}</td></tr>
+        <tr><td>Contamination</td><td>{{ model_params.contamination }}</td></tr>
+        <tr><td>Features Used</td><td>{{ model_params.feature_count }}</td></tr>
+    </table>
+    <h2>Top Anomalous Flows</h2>
+    {% if anomaly_table %}
+    <table>
+        <tr><th>Source IP</th><th>Dest IP</th><th>Port</th><th>Proto</th><th>Packets</th><th>Bytes</th><th>Score</th></tr>
+        {% for row in anomaly_table %}
+        <tr>
+            <td>{{ row.src_ip }}</td>
+            <td>{{ row.dst_ip }}</td>
+            <td>{{ row.dst_port }}</td>
+            <td>{{ row.protocol }}</td>
+            <td>{{ row.packet_count }}</td>
+            <td>{{ row.byte_count }}</td>
+            <td><span class="{{ row.score_class }}">{{ row.anomaly_score_normalized }}</span></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+<!-- 4. JA3 FINGERPRINT MATCHES -->
+<h1>4. JA3 TLS Fingerprint Analysis</h1>
+<div class="section">
+    <p>JA3 hashes the TLS ClientHello to identify malware without decryption.</p>
+    {% if ja3_table %}
+    <table>
+        <tr><th>JA3 Hash</th><th>Malware</th><th>Source IP</th><th>Status</th></tr>
+        {% for row in ja3_table %}
+        <tr>
+            <td style="font-family:monospace;font-size:8pt;">{{ row.ja3_hash }}</td>
+            <td>{{ row.malware or 'N/A' }}</td>
+            <td>{{ row.src_ip }}</td>
+            <td>{% if row.is_malicious %}<span class="badge badge-danger">MATCH</span>{% else %}<span class="badge badge-safe">Clean</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p><em>No TLS ClientHello packets detected in the capture.</em></p>
+    {% endif %}
+</div>
+
+<!-- 5. IP REPUTATION -->
+<h1>5. IP Reputation Analysis</h1>
+<div class="section">
+    {% if ip_reputation_table %}
+    <table>
+        <tr><th>IP Address</th><th>Abuse Score</th><th>Category</th><th>Country</th><th>ISP</th><th>Source</th></tr>
+        {% for row in ip_reputation_table %}
+        <tr>
+            <td>{{ row.ip }}</td>
+            <td><span class="{{ row.score_class }}">{{ row.abuse_score }}%</span></td>
+            <td>{{ row.category }}</td>
+            <td>{{ row.country | default('N/A') }}</td>
+            <td>{{ row.isp | default('N/A') }}</td>
+            <td>{{ row.source }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p><em>No external IPs to check.</em></p>
+    {% endif %}
+</div>
+
+<!-- 6. PROTOCOL DISTRIBUTION -->
+<h1>6. Protocol Distribution</h1>
+<div class="section">
+    {% if protocol_chart %}
+    <div class="chart-container">
+        <img src="{{ protocol_chart }}" alt="Protocol Distribution">
+    </div>
+    {% endif %}
+    {% if protocol_table %}
+    <table>
+        <tr><th>Protocol</th><th>Flow Count</th><th>Percentage</th><th>Total Bytes</th></tr>
+        {% for row in protocol_table %}
+        <tr>
+            <td>{{ row.protocol }}</td>
+            <td>{{ row.count }}</td>
+            <td>{{ row.percentage }}%</td>
+            <td>{{ row.bytes }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+<!-- 7. GEOGRAPHIC ANALYSIS -->
+<h1>7. Geographic Analysis</h1>
+<div class="section">
+    {% if geo_chart %}
+    <div class="chart-container">
+        <img src="{{ geo_chart }}" alt="Geographic Map">
+    </div>
+    {% endif %}
+</div>
+
+<!-- 8. STATISTICAL BASELINE -->
+<h1>8. Statistical Baseline Deviation</h1>
+<div class="section">
+    <p>NetSentinel builds a personalized baseline from your traffic to reduce false positives.</p>
+    {% if baseline_table %}
+    <table>
+        <tr><th>Feature</th><th>Mean</th><th>Std Dev</th><th>Median</th><th>IQR</th></tr>
+        {% for row in baseline_table %}
+        <tr>
+            <td>{{ row.feature }}</td>
+            <td>{{ row.mean }}</td>
+            <td>{{ row.std }}</td>
+            <td>{{ row.median }}</td>
+            <td>{{ row.iqr }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+<!-- 9. RECOMMENDATIONS -->
+<h1>9. Recommendations</h1>
+<div class="section recommendations">
+    <ul>
+        {% for rec in recommendations %}
+        <li>{{ rec }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- 10. CHAIN OF CUSTODY -->
+<h1>10. Chain of Custody</h1>
+<div class="section">
+    <p>Cryptographic hashes ensure evidence integrity for legal/academic use.</p>
+    <h2>Evidence Hash (PCAP)</h2>
+    <div class="hash-box">
+        <strong>Algorithm:</strong> {{ custody.evidence.algorithm | default('SHA-256') }}<br>
+        <strong>File:</strong> {{ custody.evidence.filename | default('N/A') }}<br>
+        <strong>SHA-256:</strong> {{ custody.evidence.hash | default('N/A') }}<br>
+        <strong>Computed At:</strong> {{ custody.evidence.timestamp | default('N/A') }}
+    </div>
+    <h2>Report Hash (PDF)</h2>
+    <div class="hash-box">
+        <strong>Algorithm:</strong> SHA-256<br>
+        <strong>SHA-256:</strong> {{ custody.report.hash | default('Computed after generation') }}<br>
+        <strong>Generated At:</strong> {{ custody.generated_at | default('N/A') }}
+    </div>
+</div>
+
+<!-- 11. ANALYST NOTES -->
+<h1>11. Analyst Notes</h1>
+<div class="section">
+    <div class="analyst-notes">{{ analyst_notes | default('No additional notes provided.') }}</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-sig">
+    Generated by <strong>NetSentinel v1.0</strong> — Encrypted Network Traffic Anomaly Detector &amp; Forensic Analyzer<br>
+    This report was generated automatically. All findings should be verified by a qualified analyst.<br>
+    Report integrity can be verified using the SHA-256 hashes in the Chain of Custody section.
+</div>
+
+</body>
+</html>
